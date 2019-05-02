@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#HERE=`pwd`
+
+ls ./carspeed.service > /dev/null 2>&1
+if [ $? != 0 ] ; then
+  echo "carspeed.service file is not located in the current directory"
+  exit
+fi
+
+sudo cp ./carspeed.service /etc/systemd/system/carspeed.service
+sudo systemctl daemon-reload
+
+#echo "enable auto-start of the service using 'sudo systemctl enable carspeed.service'. "
+read -p "Do you want to Enable starting carspeed.service at boot time? y/n" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo systemctl enable carspeed.service
+fi
+
+#echo "start the service using 'sudo systemctl start carspeed.service'. "
+read -p "Do you want to Start the carspeed.service NOW? y/n" -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    sudo systemctl start carspeed.service
+    sleep 1
+    sudo systemctl status carspeed.service
+fi
