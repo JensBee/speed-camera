@@ -1,3 +1,15 @@
+# Car Speed Detection - carspeed.py (version 2.1)
+
+## New Features( by Doug LaRue ):
+
+* --use-webcam  option to enable using a USB web camera instead of the Raspberry Pi camera. This works on desktop or laptop computers too.
+* automatically exporting a monitoring area file( monitoringarea_xxxxxxx.csv ) with parameters of the defined monitoring area.
+* --config monitoringarea_xxxx.csv option will load a predefined monitoring area and skip the GUI setup. Great for headless operation
+* headless option mode allows commandline operation and daemon mode
+* new carspeed.service file for running as a systemd daemon
+* new setupDaemonMode file for helping setup, enable and start the daemon
+
+
 # Car Speed Detection - carspeed.py (version 2.0)
 
 ## Blog URL

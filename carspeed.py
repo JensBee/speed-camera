@@ -1,4 +1,4 @@
-# CarSpeed Version 2.0
+# CarSpeed Version 2.1
 """
 Script to capture moving car speed
 
