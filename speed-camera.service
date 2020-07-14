@@ -1,0 +1,16 @@
+[Unit]
+Description=Speed Camera
+After=network.target
+
+[Service]
+User=pi
+Restart=always
+WorkingDirectory=/home/pi/speed-camera
+ExecStart=/usr/bin/python3 /home/pi/speed-camera/speed-camera.py --config config.yaml
+KillMode=process
+ExecStop=/bin/kill -HUP $MAINPID
+StartLimitIntervalSec=10
+
+[Install]
+WantedBy=multi-user.target
+
