@@ -66,6 +66,7 @@ class Config:
     # communication
     telegram_token = ""   # <----
     telegram_chat_id = "" # <----
+    telegram_frequency = 6 # <----
     # debug
     debug_enabled = False  # <----
 
@@ -304,17 +305,21 @@ logging.basicConfig(
 # load config
 cfg = Config.load(config_file)
 
-# initialize messaging
-bot = None
-if cfg.telegram_token and cfg.telegram_chat_id:
-    bot = telegram.Bot(cfg.telegram_token)
-
 # setup camera
 (camera, capture) = setup_camera(cfg)
 
 # determine the boundary
 logging.info("Monitoring: ({},{}) to ({},{}) = {}x{} space".format(
     cfg.upper_left_x, cfg.upper_left_y, cfg.lower_right_x, cfg.lower_right_y, cfg.monitored_width, cfg.monitored_height))
+
+# initialize messaging
+bot = None
+if cfg.telegram_token and cfg.telegram_chat_id:
+    bot = telegram.Bot(cfg.telegram_token)
+    bot.send_message(
+        chat_id=cfg.telegram_chat_id,
+        text="Speed Camera ONLINE"
+    )
 
 # calculate the the width of the image at the distance specified
 l2r_ft_per_pixel = get_pixel_width(cfg.fov, cfg.l2r_distance, cfg.image_width)
@@ -355,6 +360,8 @@ base_image = None
 stats_l2r = np.array([])
 stats_r2l = np.array([])
 stats_time = datetime.datetime.now()
+# startup
+has_started = False
 
 # capture frames from the camera (using capture_continuous.
 #   This keeps the picamera in capture mode - it doesn't need
@@ -365,7 +372,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
     timestamp = datetime.datetime.now()
 
     # Save a preview of the image
-    if PREVIEW:
+    if not has_started:
         image = annotate_image(frame.array, timestamp)
         cv2.imwrite("preview.jpg", image)
         if bot:
@@ -374,7 +381,9 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 photo=open('preview.jpg', 'rb'),
                 caption='Preview'
             )
-        logging.info("Wrote preview.jpg")
+        has_started = True
+
+    if PREVIEW:
         exit(0)
 
     # Log the current FPS
@@ -385,8 +394,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
         fps_time = timestamp
         fps_frames = 0
 
-    # Share stats every hour
-    if secs_diff(timestamp, stats_time) > 60 * 60:
+    # Share stats every X hours
+    if secs_diff(timestamp, stats_time) > cfg.telegram_frequency * 60 * 60:
         stats_time = timestamp
         total = len(stats_l2r) + len(stats_r2l)
         if total > 0:
@@ -402,8 +411,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
 
             bot.send_message(
                 chat_id=cfg.telegram_chat_id,
-                text="{:.0f} cars in the past hour\nL2R {:.0f}% at {:.0f} speed\nR2L {:.0f}% at {:.0f} speed".format(
-                    total, l2r_perc, l2r_mean, r2l_perc, r2l_mean
+                text="{:.0f} cars in the past {:.0f} hours\nL2R {:.0f}% at {:.0f} speed\nR2L {:.0f}% at {:.0f} speed".format(
+                    total, cfg.telegram_frequency, l2r_perc, l2r_mean, r2l_perc, r2l_mean
                 )
             )
 
