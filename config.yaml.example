@@ -1,0 +1,41 @@
+# location to monitor
+upper_left_x: 25
+upper_left_y: 312
+lower_right_x: 950
+lower_right_y: 395
+
+# distance-to-road in feet
+l2r_distance: 75
+r2l_distance: 85
+
+# minimum speed for saving records
+min_speed_record: 10
+# minimum speed for saving images
+min_speed_image : 30
+# what the smallest area to detect is
+min_detect_area: 500
+# what the smallest area to consider saving
+min_save_area: 2000
+
+# field of view
+fov: 62.2
+# frames per second
+fps: 30
+# resolution
+image_width: 1024
+image_height: 576
+
+# threshold of events to ignore
+too_close: 0.4
+# thresholds for recording
+min_save_buffer: 2
+
+# communication
+telegram_token: "ABC:DEF"
+# person/group to send the message to
+telegram_chat_id: "123456789"
+# hours between updates
+telegram_frequency: 6
+
+# debug
+debug_enabled: true
