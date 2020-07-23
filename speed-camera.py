@@ -57,6 +57,8 @@ class Config:
     fps = 30              # <---- frames per second
     image_width = 1024    # <---- resolution width
     image_height = 576    # <---- resolution height
+    camera_vflip = False  # <---- flip camera vertically
+    camera_hflip = False  # <---- flip camera horizontally
     # thresholds for recording
     too_close = 0.4       # <----
     min_speed_save = 10   # <---- minimum speed for saving records
@@ -277,8 +279,8 @@ def setup_camera(cfg):
 
     # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
     camera = PiCamera(resolution=cfg.resolution, framerate=cfg.fps, sensor_mode=5)
-    camera.vflip = False
-    camera.hflip = False
+    camera.vflip = cfg.camera_vflip
+    camera.hflip = cfg.camera_hflip
 
     # start capturing
     capture = PiRGBArray(camera, size=camera.resolution)
