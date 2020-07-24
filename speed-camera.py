@@ -57,12 +57,16 @@ class Config:
     fps = 30              # <---- frames per second
     image_width = 1024    # <---- resolution width
     image_height = 576    # <---- resolution height
+    camera_vflip = False  # <---- flip camera vertically
+    camera_hflip = False  # <---- flip camera horizontally
     # thresholds for recording
     too_close = 0.4       # <----
     min_speed_save = 10   # <---- minimum speed for saving records
     min_speed_image  = 30 # <---- minimum speed for saving images
     min_area_detect = 500 # <---- minimum area for detecting motion
     min_area_save = 2000  # <---- minimum area for saving records
+    min_confidence_record = 70  # <---- minimum percentage confidence for saving records
+    min_confidence_image = 70   # <---- minimum percentage confidence for saving records
     # communication
     telegram_token = ""   # <----
     telegram_chat_id = "" # <----
@@ -277,8 +281,8 @@ def setup_camera(cfg):
 
     # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
     camera = PiCamera(resolution=cfg.resolution, framerate=cfg.fps, sensor_mode=5)
-    camera.vflip = False
-    camera.hflip = False
+    camera.vflip = cfg.camera_vflip
+    camera.hflip = cfg.camera_hflip
 
     # start capturing
     capture = PiRGBArray(camera, size=camera.resolution)
@@ -581,10 +585,10 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     logging.info("Overall Confidence Level {:.0f}%".format(confidence))
 
                     # If they are speeding, record the event and image
-                    if (mean_speed >= cfg.min_speed_image and avg_area >= cfg.min_area_save):
+                    if (confidence >= cfg.min_confidence_image and mean_speed >= cfg.min_speed_image and avg_area >= cfg.min_area_save):
                         save_image(image, timestamp, mph=mean_speed,
                                    confidence=confidence)
-                    if (mean_speed >= cfg.min_speed_save and avg_area >= cfg.min_area_save):
+                    if (confidence >= cfg.min_confidence_record and mean_speed >= cfg.min_speed_save and avg_area >= cfg.min_area_save):
                         save_record("{},{:.0f},{:.0f},{:.0f},{:.0f},{:d},{:.2f},{:s}".format(
                             timestamp.timestamp(), mean_speed, sd_speed, avg_area, sd_area, len(speeds), secs, str_direction(direction)))
 
@@ -596,7 +600,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                         elif direction == RIGHT_TO_LEFT and confidence > 75:
                             stats_r2l = np.append(stats_r2l, mean_speed)
                     else:
-                        logging.info("Event not recorded: Speed or Area too low")
+                        logging.info("Event not recorded: Speed, Area, or Confidence too low")
 
                     state = SAVING
                     cap_time = timestamp
