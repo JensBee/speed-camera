@@ -9,13 +9,17 @@ l2r_distance: 75
 r2l_distance: 85
 
 # minimum speed for saving records
-min_speed_record: 10
+min_speed: 10
 # minimum speed for saving images
-min_speed_image : 30
-# what the smallest area to detect is
-min_detect_area: 500
+min_speed_alert : 30
 # what the smallest area to consider saving
-min_save_area: 2000
+min_save: 2000
+# what the minimum percentage confidence to consider saving records
+min_confidence: 70  
+# what the minimum percentage confidence to consider sending an alert
+min_confidence_alert: 70
+# threshold of events to ignore
+min_distance: 0.4
 
 # field of view
 fov: 62.2
@@ -24,11 +28,8 @@ fps: 30
 # resolution
 image_width: 1024
 image_height: 576
-
-# threshold of events to ignore
-too_close: 0.4
-# thresholds for recording
-min_save_buffer: 2
+# what the smallest area to detect is
+image_min_area: 500
 
 # communication
 telegram_token: "ABC:DEF"
@@ -36,6 +37,3 @@ telegram_token: "ABC:DEF"
 telegram_chat_id: "123456789"
 # hours between updates
 telegram_frequency: 6
-
-# debug
-debug_enabled: true
