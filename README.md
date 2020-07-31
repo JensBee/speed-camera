@@ -2,6 +2,8 @@
 
 ## Description
 
+![example-result](https://user-images.githubusercontent.com/622065/88995677-207ec280-d2a0-11ea-9cc0-4f8271f7de09.gif)
+
 This program, designed for the Raspberry Pi, records the speed of cars driving perpendicular to a PiCamera.  For vehicles traveling faster than a specified speed, it will send the video feed via Telegram.  It determines speed based on the field-of-view of the camera and distance from the cars.
 
 All of the data is output in a CSV format that works well in software like Splunk.
@@ -75,6 +77,8 @@ For this section, speed is the mean MPH, area is pixels, and confidence is how c
 ### Preview
 
 Preview mode writes a `preview.jpg` file out on disk as well as sending to Telegram.  This is useful for determining the `(X,Y)` coordinates you want to monitor.
+
+![preview](https://user-images.githubusercontent.com/622065/88995809-781d2e00-d2a0-11ea-9096-7bf43b9f8120.png)
 
 ```
 $ python3 speed-camera.py preview --config config.yaml
