@@ -1,9 +1,9 @@
-# CarSpeed Version 4.0
+# speed-camera v4.0
 """
 Script to capture moving car speed
 
 Usage:
-    carspeed.py [preview] [--config=<file>]
+    speed-camera.py [preview] [--config=<file>]
 
 Options:
     -h --help     Show this screen.
@@ -567,12 +567,15 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
             if state == TRACKING:
                 abs_chg = 0
                 mph = 0
+                distance = 0
                 if x >= last_x:
                     direction = LEFT_TO_RIGHT
+                    distance = cfg.l2r_distance
                     abs_chg = (x + w) - (initial_x + initial_w)
                     mph = get_speed(abs_chg, l2r_ft_per_pixel, secs)
                 else:
                     direction = RIGHT_TO_LEFT
+                    distance = cfg.r2l_distance
                     abs_chg = initial_x - x
                     mph = get_speed(abs_chg, r2l_ft_per_pixel, secs)
 
@@ -583,13 +586,21 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 events.append({
                     'image': image.copy(),
                     'ts': timestamp,
+                    # Location of object
                     'x': x,
                     'y': y,
                     'w': w,
                     'h': h,
-                    'delta': abs_chg,
-                    'area': biggest_area,
+                    # Speed
                     'mph': mph,
+                    # MPH is calculated from secs, delta, fov, distance, image_width
+                    'fov': cfg.fov,
+                    'image_width': cfg.image_width,
+                    'distance': distance,
+                    'secs': secs,
+                    'delta': abs_chg,
+                    # Other useful data
+                    'area': biggest_area,
                     'dir': str_direction(direction),
                 })
 
