@@ -3,6 +3,7 @@ TARGET_PATH?=speed-camera
 
 install:
 	apt-get install python3-picamera python3-docopt python3-opencv python3-scipy python3-numpy imagemagick python3-yaml
+	pip3 install python-telegram-bot
 	cp ./speed-camera.service /etc/systemd/system/speed-camera.service
 	systemctl daemon-reload
 	systemctl enable speed-camera.service

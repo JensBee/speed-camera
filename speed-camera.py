@@ -22,8 +22,10 @@ import time
 import math
 import json
 import yaml
+import shutil
 import telegram
 import subprocess
+from multiprocessing import Process
 
 # Location for files/logs
 FILENAME_SERVICE = "logs/service.log"
@@ -33,7 +35,6 @@ FILENAME_RECORD = "logs/recorded_speed.csv"
 MIN_SAVE_BUFFER = 2
 THRESHOLD = 25
 BLURSIZE = (15,15)
-RECORD_HEADERS = 'Timestamp,Speed,SpeedDeviation,Area,AreaDeviation,Frames,Seconds,Direction'
 
 # the following enumerated values are used to make the program more readable
 WAITING = 0
@@ -50,29 +51,27 @@ class Config:
     lower_right_x = 1024
     lower_right_y = 576
     # range
-    l2r_distance = 65     # <---- distance-to-road in feet (left-to-right side)
-    r2l_distance = 80     # <---- distance-to-road in feet (right-to-left side)
+    l2r_distance = 65         # <---- distance-to-road in feet (left-to-right side)
+    r2l_distance = 80         # <---- distance-to-road in feet (right-to-left side)
     # camera settings
-    fov = 62.2            # <---- field of view
-    fps = 30              # <---- frames per second
-    image_width = 1024    # <---- resolution width
-    image_height = 576    # <---- resolution height
-    camera_vflip = False  # <---- flip camera vertically
-    camera_hflip = False  # <---- flip camera horizontally
+    fov = 62.2                # <---- field of view
+    fps = 30                  # <---- frames per second
+    image_width = 1024        # <---- resolution width
+    image_height = 576        # <---- resolution height
+    image_min_area = 500      # <---- minimum area for detecting motion
+    camera_vflip = False      # <---- flip camera vertically
+    camera_hflip = False      # <---- flip camera horizontally
     # thresholds for recording
-    too_close = 0.4       # <----
-    min_speed_save = 10   # <---- minimum speed for saving records
-    min_speed_image  = 30 # <---- minimum speed for saving images
-    min_area_detect = 500 # <---- minimum area for detecting motion
-    min_area_save = 2000  # <---- minimum area for saving records
-    min_confidence_record = 70  # <---- minimum percentage confidence for saving records
-    min_confidence_image = 70   # <---- minimum percentage confidence for saving records
+    min_distance = 0.4        # <---- minimum distance between cars
+    min_speed = 10            # <---- minimum speed for recording events
+    min_speed_alert = 30      # <---- minimum speed for sending an alert
+    min_area = 2000           # <---- minimum area for recording events
+    min_confidence = 70       # <---- minimum percentage confidence for recording events
+    min_confidence_alert = 70 # <---- minimum percentage confidence for saving images
     # communication
     telegram_token = ""   # <----
     telegram_chat_id = "" # <----
     telegram_frequency = 6 # <----
-    # debug
-    debug_enabled = False  # <----
 
     @staticmethod
     def load(config_file):
@@ -108,6 +107,124 @@ class Config:
 
         return cfg
 
+class Recorder:
+    min_speed = 10            # <---- minimum speed for recording events
+    min_speed_alert = 30      # <---- minimum speed for sending an alert
+    min_area = 2000           # <---- minimum area for recording events
+    min_confidence = 70       # <---- minimum percentage confidence for recording events
+    min_confidence_alert = 70 # <---- minimum percentage confidence for saving images
+    # communication
+    telegram_token = ""   # <---- telegram bot token
+    telegram_chat_id = "" # <---- telegram chat ID
+    bot = None
+
+    # Location of the record
+    RECORD_FILENAME = 'logs/recorded_speed.csv'
+    RECORD_HEADERS = 'Timestamp,Speed,SpeedDeviation,Area,AreaDeviation,Frames,Seconds,Direction'
+
+    def __init__(self, cfg):
+        for key, value in cfg.__dict__.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
+        # Initialize Bot
+        self.bot = None
+        if self.telegram_token and self.telegram_chat_id:
+            self.bot = telegram.Bot(self.telegram_token)
+
+        # Write headers to the output csv
+        f = Path(self.RECORD_FILENAME)
+        if not f.is_file():
+            self.write_csv(self.RECORD_HEADERS)
+
+    def send_animation(self, timestamp, events, confidence, mph):
+        folder = "logs/{}-{:02.0f}mph-{:.0f}".format(timestamp.strftime('%Y-%m-%d_%H:%M:%S.%f'), mph, confidence)
+        gif_file = "{}.gif".format(folder)
+        json_file = "{}.json".format(folder)
+
+        # Create the directory
+        Path(folder).mkdir(parents=True, exist_ok=True)
+
+        data = []
+        for e in events:
+            # annotate it
+            image = annotate_image(e['image'], e['ts'], mph=e['mph'], confidence=confidence, x=e['x'], y=e['y'], w=e['w'], h=e['h'])
+
+            # and save the image to disk
+            cv2.imwrite("{}/{}.jpg".format(folder, e['ts']), image)
+
+            del(e['image'])
+            e['ts'] = e['ts'].timestamp()
+            data.append(e)
+
+        with open(json_file, 'w') as outfile:
+            json.dump(data, outfile)
+
+        # Create a gif
+        p = subprocess.Popen(["/usr/bin/convert", "-delay", "10", "*.jpg", "../../{}".format(gif_file)], cwd=folder)
+        p.wait()
+
+        # Remove the temporary files
+        shutil.rmtree(folder, ignore_errors=True)
+
+        # Send message
+        self.send_gif(
+            filename=gif_file,
+            text='{:.0f} mph @ {:.0f}%'.format(mph, confidence)
+        )
+
+        return gif_file
+
+    def write_csv(self, message):
+        f = open(self.RECORD_FILENAME, 'a')
+        f.write(message + "\n")
+        f.close
+
+    def send_message(self, text):
+        if not self.bot:
+            return
+
+        self.bot.send_message(
+            chat_id=self.telegram_chat_id,
+            text=text
+        )
+
+    def send_image(self, filename, text):
+        if not self.bot:
+            return
+
+        self.bot.send_photo(
+            chat_id=self.telegram_chat_id,
+            photo=open(filename, 'rb'),
+            caption=text
+        )
+
+    def send_gif(self, filename, text):
+        if not self.bot:
+            return
+
+        self.bot.send_animation(
+            chat_id=self.telegram_chat_id,
+            animation=open(filename, 'rb'),
+            caption=text
+        )
+
+    def record(self, confidence, image, timestamp, mean_speed, avg_area, sd_speed, sd_area, speeds, secs, direction, events):
+        if confidence < self.min_confidence or mean_speed < self.min_speed or avg_area < self.min_area:
+            return False
+
+        # Write the log
+        self.write_csv("{},{:.0f},{:.0f},{:.0f},{:.0f},{:d},{:.2f},{:s}".format(
+            timestamp.timestamp(), mean_speed, sd_speed, avg_area, sd_area, len(speeds), secs, str_direction(direction))
+        )
+
+        # If the threshold is high enough, alert and write to disk
+        if confidence >= self.min_confidence_alert and mean_speed >= self.min_speed_alert:
+            p = Process(target=self.send_animation, args=(timestamp, events, confidence, mean_speed,))
+            p.start()
+
+        return True
+
 # calculate speed from pixels and time
 def get_speed(pixels, ftperpixel, secs):
     if secs > 0.0:
@@ -134,13 +251,6 @@ def str_direction(direction):
 def secs_diff(endTime, begTime):
     diff = (endTime - begTime).total_seconds()
     return diff
-
-# record speed in .csv format
-def save_record(res):
-    global FILENAME_RECORD
-    f = open(FILENAME_RECORD, 'a')
-    f.write(res+"\n")
-    f.close
 
 def parse_command_line():
     preview = False
@@ -190,8 +300,12 @@ def detect_motion(image, min_area):
 
     return (motion_found, x, y, w, h, biggest_area)
 
-def annotate_image(image, timestamp, mph=0, confidence=0):
+def annotate_image(image, timestamp, mph=0, confidence=0, h=0, w=0, x=0, y=0):
     global cfg
+
+    # colors
+    color_green = (0, 255, 0)
+    color_red = (0, 0, 255)
 
     # make it gray
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -199,7 +313,7 @@ def annotate_image(image, timestamp, mph=0, confidence=0):
 
     # timestamp the image
     cv2.putText(image, timestamp.strftime("%d %B %Y %H:%M:%S.%f"),
-                (10, image.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                (10, image.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color_red, 2)
 
     # write the speed
     if mph > 0:
@@ -208,7 +322,7 @@ def annotate_image(image, timestamp, mph=0, confidence=0):
 
         # then center it horizontally on the image
         cntr_x = int((cfg.image_width - size[0]) / 2)
-        cv2.putText(image, msg, (cntr_x, int(cfg.image_height * 0.2)), cv2.FONT_HERSHEY_SIMPLEX, 2.00, (0, 0, 255), 3)
+        cv2.putText(image, msg, (cntr_x, int(cfg.image_height * 0.2)), cv2.FONT_HERSHEY_SIMPLEX, 2.00, color_red, 3)
 
     # write the confidence
     if confidence > 0:
@@ -217,63 +331,21 @@ def annotate_image(image, timestamp, mph=0, confidence=0):
 
         # then right align it horizontally on the image
         cntr_x = int((cfg.image_width - size[0]) / 4) * 3
-        cv2.putText(image, msg, (cntr_x, int(cfg.image_height * 0.2)), cv2.FONT_HERSHEY_SIMPLEX, 1.00, (0, 0, 255), 3)
+        cv2.putText(image, msg, (cntr_x, int(cfg.image_height * 0.2)), cv2.FONT_HERSHEY_SIMPLEX, 1.00, color_red, 3)
 
     # define the monitored area right and left boundary
     cv2.line(image, (cfg.upper_left_x, cfg.upper_left_y),
-                (cfg.upper_left_x, cfg.lower_right_y), (0, 255, 0), 4)
+                (cfg.upper_left_x, cfg.lower_right_y), color_green, 4)
     cv2.line(image, (cfg.lower_right_x, cfg.upper_left_y),
-                (cfg.lower_right_x, cfg.lower_right_y), (0, 255, 0), 4)
+                (cfg.lower_right_x, cfg.lower_right_y), color_green, 4)
+
+    # Add the boundary
+    if h > 0 and w > 0:
+        cv2.rectangle(image,
+            (cfg.upper_left_x + x, cfg.upper_left_y + y),
+            (cfg.upper_left_x + x + w, cfg.upper_left_y + y + h), color_green, 2)
 
     return image
-
-
-def save_debug(timestamp, events):
-    global cfg
-
-    folder = "logs/debug/{}".format(timestamp)
-    Path(folder).mkdir(parents=True, exist_ok=True)
-
-    data = []
-    for e in events:
-        # annotate it
-        image = annotate_image(e['image'], e['ts'], mph=e['mph'])
-
-        # Add the boundary
-        cv2.rectangle(image,
-            (cfg.upper_left_x + e['x'], cfg.upper_left_y + e['y']),
-            (cfg.upper_left_x + e['x'] + e['w'], cfg.upper_left_y + e['y'] + e['h']), (0, 255, 0), 2)
-
-        # and save the image to disk
-        imageFilename = "{}/{}.jpg".format(folder, e['ts'])
-        cv2.imwrite(imageFilename, image)
-
-        del(e['image'])
-        e['ts'] = e['ts'].timestamp()
-        data.append(e)
-
-    with open("{}/data.json".format(folder), 'w') as outfile:
-        json.dump(data, outfile)
-
-    # Create a gif
-    subprocess.Popen(["/usr/bin/convert", "-delay", "10", "*.jpg", "animation.gif"], cwd=folder)
-
-def save_image(image, timestamp, mph=0, confidence=0):
-    global cfg, bot
-    image = annotate_image(image, timestamp, mph=mph, confidence=confidence)
-
-    # and save the image to disk
-    imageFilename = "logs/car_at_{:02.0f}_{}.jpg".format(
-        mph, timestamp.timestamp())
-    cv2.imwrite(imageFilename, image)
-
-    # send message to telegram
-    if bot:
-        bot.send_photo(
-            chat_id=cfg.telegram_chat_id,
-            photo=open(imageFilename, 'rb'),
-            caption='{:.0f}mph @ {:.0f}%'.format(mph, confidence)
-        )
 
 # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
 def setup_camera(cfg):
@@ -317,24 +389,13 @@ logging.info("Monitoring: ({},{}) to ({},{}) = {}x{} space".format(
     cfg.upper_left_x, cfg.upper_left_y, cfg.lower_right_x, cfg.lower_right_y, cfg.monitored_width, cfg.monitored_height))
 
 # initialize messaging
-bot = None
-if cfg.telegram_token and cfg.telegram_chat_id:
-    bot = telegram.Bot(cfg.telegram_token)
-    bot.send_message(
-        chat_id=cfg.telegram_chat_id,
-        text="Speed Camera ONLINE"
-    )
+recorder = Recorder(cfg)
 
 # calculate the the width of the image at the distance specified
 l2r_ft_per_pixel = get_pixel_width(cfg.fov, cfg.l2r_distance, cfg.image_width)
 r2l_ft_per_pixel = get_pixel_width(cfg.fov, cfg.r2l_distance, cfg.image_width)
 logging.info("L2R: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_ft_per_pixel))
 logging.info("R2L: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_ft_per_pixel))
-
-# write headers to the output log
-csv_file=Path(FILENAME_RECORD)
-if not csv_file.is_file():
-    save_record(RECORD_HEADERS)
 
 state = WAITING
 direction = UNKNOWN
@@ -346,24 +407,24 @@ last_w = 0
 biggest_area = 0
 areas = np.array([])
 # timing
-initial_time = datetime.datetime.now()
-cap_time = datetime.datetime.now()
-timestamp = datetime.datetime.now()
+initial_time = datetime.datetime.utcnow()
+cap_time = datetime.datetime.utcnow()
+timestamp = datetime.datetime.utcnow()
 # speeds
 sd = 0
 speeds = np.array([])
 counter = 0
-# debug captures
-debugs = []
+# event captures
+events = []
 # fps
-fps_time = datetime.datetime.now()
+fps_time = datetime.datetime.utcnow()
 fps_frames = 0
 # capture
 base_image = None
 # stats
 stats_l2r = np.array([])
 stats_r2l = np.array([])
-stats_time = datetime.datetime.now()
+stats_time = datetime.datetime.utcnow()
 # startup
 has_started = False
 
@@ -373,18 +434,16 @@ has_started = False
 #
 for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
     # initialize the timestamp
-    timestamp = datetime.datetime.now()
+    timestamp = datetime.datetime.utcnow()
 
     # Save a preview of the image
     if not has_started:
         image = annotate_image(frame.array, timestamp)
         cv2.imwrite("preview.jpg", image)
-        if bot:
-            bot.send_photo(
-                chat_id=cfg.telegram_chat_id,
-                photo=open('preview.jpg', 'rb'),
-                caption='Preview'
-            )
+        recorder.send_image(
+            filename='preview.jpg',
+            text='Current View'
+        )
         has_started = True
 
     if PREVIEW:
@@ -413,9 +472,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
             if len(stats_r2l) > 0:
                 r2l_mean = np.mean(stats_r2l)
 
-            bot.send_message(
-                chat_id=cfg.telegram_chat_id,
-                text="{:.0f} cars in the past {:.0f} hours\nL2R {:.0f}% at {:.0f} speed\nR2L {:.0f}% at {:.0f} speed".format(
+            recorder.send_message(
+                "{:.0f} cars in the past {:.0f} hours\nL2R {:.0f}% at {:.0f} speed\nR2L {:.0f}% at {:.0f} speed".format(
                     total, cfg.telegram_frequency, l2r_perc, l2r_mean, r2l_perc, r2l_mean
                 )
             )
@@ -445,14 +503,14 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
         capture.truncate(0)
         continue
 
-    # compute the absolute difference between the current image and
+    #  compute the absolute difference between the current image and
     # base image and then turn eveything lighter gray than THRESHOLD into
     # white
     frameDelta = cv2.absdiff(gray, cv2.convertScaleAbs(base_image))
     thresh = cv2.threshold(frameDelta, THRESHOLD, 255, cv2.THRESH_BINARY)[1]
 
     # look for motion in the image
-    (motion_found, x, y, w, h, biggest_area) = detect_motion(thresh, cfg.min_area_detect)
+    (motion_found, x, y, w, h, biggest_area) = detect_motion(thresh, cfg.image_min_area)
 
     if motion_found:
         if state == WAITING:
@@ -470,8 +528,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
             areas = np.array([])
             speeds = np.array([])
 
-            # debug capturing
-            debugs = []
+            # event capturing
+            events = []
 
             # detect gap and data points
             car_gap = secs_diff(initial_time, cap_time)
@@ -482,7 +540,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
 
             # if gap between cars too low then probably seeing tail lights of current car
             # but I might need to tweek this if find I'm not catching fast cars
-            if (car_gap < cfg.too_close):
+            if (car_gap < cfg.min_distance):
                 state = WAITING
                 direction = UNKNOWN
                 motion_found = False
@@ -521,20 +579,19 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 speeds = np.append(speeds, mph)
                 areas = np.append(areas, biggest_area)
 
-                # Store data
-                if cfg.debug_enabled:
-                    debugs.append({
-                        'image': image.copy(),
-                        'ts': timestamp,
-                        'x': x,
-                        'y': y,
-                        'w': w,
-                        'h': h,
-                        'delta': abs_chg,
-                        'area': biggest_area,
-                        'mph': mph,
-                        'dir': str_direction(direction),
-                    })
+                # Store event data
+                events.append({
+                    'image': image.copy(),
+                    'ts': timestamp,
+                    'x': x,
+                    'y': y,
+                    'w': w,
+                    'h': h,
+                    'delta': abs_chg,
+                    'area': biggest_area,
+                    'mph': mph,
+                    'dir': str_direction(direction),
+                })
 
                 # If we've stopped or are going backward, reset.
                 if mph <= 0:
@@ -559,8 +616,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     confidence = 0
                     #you need at least 3 data points to calculate a mean and we're deleting two
                     if (len(speeds) > 3):
-                        # Mean of all items except the last one
-                        mean_speed = np.mean(speeds[:-1])
+                        # Mean of all items except the first and last one
+                        mean_speed = np.mean(speeds[1:-1])
                         # Mode of area (except the first and last)
                         avg_area = np.average(areas[1:-1])
                         # SD of all items except the last one
@@ -585,19 +642,24 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     logging.info("Overall Confidence Level {:.0f}%".format(confidence))
 
                     # If they are speeding, record the event and image
-                    if (confidence >= cfg.min_confidence_image and mean_speed >= cfg.min_speed_image and avg_area >= cfg.min_area_save):
-                        save_image(image, timestamp, mph=mean_speed,
-                                   confidence=confidence)
-                    if (confidence >= cfg.min_confidence_record and mean_speed >= cfg.min_speed_save and avg_area >= cfg.min_area_save):
-                        save_record("{},{:.0f},{:.0f},{:.0f},{:.0f},{:d},{:.2f},{:s}".format(
-                            timestamp.timestamp(), mean_speed, sd_speed, avg_area, sd_area, len(speeds), secs, str_direction(direction)))
-
-                        if cfg.debug_enabled:
-                            save_debug(timestamp, debugs)
-
-                        if direction == LEFT_TO_RIGHT and confidence > 75:
+                    recorded = recorder.record(
+                        image=image,
+                        timestamp=timestamp,
+                        confidence=confidence,
+                        mean_speed=mean_speed,
+                        avg_area=avg_area,
+                        sd_speed=sd_speed,
+                        sd_area=sd_area,
+                        speeds=speeds,
+                        secs=secs,
+                        direction=direction,
+                        events=events
+                    )
+                    if recorded:
+                        logging.info("Event recorded")
+                        if direction == LEFT_TO_RIGHT :
                             stats_l2r = np.append(stats_l2r, mean_speed)
-                        elif direction == RIGHT_TO_LEFT and confidence > 75:
+                        elif direction == RIGHT_TO_LEFT:
                             stats_r2l = np.append(stats_r2l, mean_speed)
                     else:
                         logging.info("Event not recorded: Speed, Area, or Confidence too low")
