@@ -1,8 +1,8 @@
 # location to monitor
-upper_left_x: 25
-upper_left_y: 312
-lower_right_x: 950
-lower_right_y: 395
+upper_left_x: 0
+upper_left_y: 0
+lower_right_x: 1024
+lower_right_y: 576
 
 # distance-to-road in feet
 l2r_distance: 75
@@ -13,7 +13,7 @@ min_speed: 10
 # minimum speed for saving images
 min_speed_alert : 30
 # what the smallest area to consider saving
-min_save: 2000
+min_area: 2000
 # what the minimum percentage confidence to consider saving records
 min_confidence: 70  
 # what the minimum percentage confidence to consider sending an alert
