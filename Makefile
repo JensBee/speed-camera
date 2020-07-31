@@ -7,9 +7,6 @@ install:
 	cp ./speed-camera.service /etc/systemd/system/speed-camera.service
 	systemctl daemon-reload
 	systemctl enable speed-camera.service
-	systemctl start speed-camera.service
-	sleep 1
-	systemctl status speed-camera.service
 
 restart:
 	systemctl restart speed-camera.service

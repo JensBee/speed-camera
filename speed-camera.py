@@ -67,11 +67,11 @@ class Config:
     min_speed_alert = 30      # <---- minimum speed for sending an alert
     min_area = 2000           # <---- minimum area for recording events
     min_confidence = 70       # <---- minimum percentage confidence for recording events
-    min_confidence_alert = 70 # <---- minimum percentage confidence for saving images
+    min_confidence_alert = 90 # <---- minimum percentage confidence for saving images
     # communication
-    telegram_token = ""   # <----
-    telegram_chat_id = "" # <----
-    telegram_frequency = 6 # <----
+    telegram_token = ""       # <---- bot token to authenticate with Telegram
+    telegram_chat_id = ""     # <---- person/group `chat_id` to send the alert to
+    telegram_frequency = 6    # <---- hours between periodic text updates
 
     @staticmethod
     def load(config_file):
