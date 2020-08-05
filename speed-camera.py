@@ -14,8 +14,8 @@ from docopt import docopt
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 from pathlib import Path
+from datetime import datetime, timezone
 import cv2
-import datetime
 import numpy as np
 import logging
 import time
@@ -120,7 +120,7 @@ class Recorder:
 
     # Location of the record
     RECORD_FILENAME = 'logs/recorded_speed.csv'
-    RECORD_HEADERS = 'Timestamp,Speed,SpeedDeviation,Area,AreaDeviation,Frames,Seconds,Direction'
+    RECORD_HEADERS = 'timestamp,speed,speed_deviation,area,area_deviation,frames,seconds,direction'
 
     def __init__(self, cfg):
         for key, value in cfg.__dict__.items():
@@ -407,9 +407,9 @@ last_w = 0
 biggest_area = 0
 areas = np.array([])
 # timing
-initial_time = datetime.datetime.utcnow()
-cap_time = datetime.datetime.utcnow()
-timestamp = datetime.datetime.utcnow()
+initial_time = datetime.now(timezone.utc)
+cap_time = datetime.now(timezone.utc)
+timestamp = datetime.now(timezone.utc)
 # speeds
 sd = 0
 speeds = np.array([])
@@ -417,14 +417,14 @@ counter = 0
 # event captures
 events = []
 # fps
-fps_time = datetime.datetime.utcnow()
+fps_time = datetime.now(timezone.utc)
 fps_frames = 0
 # capture
 base_image = None
 # stats
 stats_l2r = np.array([])
 stats_r2l = np.array([])
-stats_time = datetime.datetime.utcnow()
+stats_time = datetime.now(timezone.utc)
 # startup
 has_started = False
 
@@ -434,7 +434,7 @@ has_started = False
 #
 for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
     # initialize the timestamp
-    timestamp = datetime.datetime.utcnow()
+    timestamp = datetime.now(timezone.utc)
 
     # Save a preview of the image
     if not has_started:
