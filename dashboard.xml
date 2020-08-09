@@ -1,0 +1,169 @@
+<form theme="light">
+  <label>Speed Camera</label>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="t" searchWhenChanged="true">
+      <label></label>
+      <default>
+        <earliest>0</earliest>
+        <latest></latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Total Traffic</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | stats count</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">cars</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>90% Speed (LTR)</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" direction="ltr" | stats perc90(speed)</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[25,30,40,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">mph</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>90% Speed (RTL)</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" direction="rtl" | stats perc90(speed)</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="rangeValues">[25,30,40,100]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">mph</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Fast Traffic (30+)</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" speed&gt;=30 | stats count</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="unit">cars</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Traffic Direction</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | stats count by direction</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Speed Frequency</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | stats count by speed</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text"># of cars</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Speed Groupings</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | bucket speed | top speed | sort speed</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.text"># of cars</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.chart">bar</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <chart>
+        <title>Time of Day</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | bucket speed | timechart span=1h count by speed | timewrap d series=short | addtotals 10-20* fieldname=10-20 | addtotals 20-30* fieldname=20-30 | addtotals 30-40* fieldname=30-40 | addtotals 40-50* fieldname=40-50 |fields - *_s* | convert timeformat="%H" ctime(_time) | eval Hour=_time | fields - _time | sort Hour | addtotals 10-20 20-30 30-40 40-50</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">1</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+    <panel>
+      <chart>
+        <title>Day of Week</title>
+        <search>
+          <query>source="recorded_speed.csv" sourcetype="csv" | bucket speed | timechart span=1d count by speed | timewrap w series=short | addtotals 10-20* fieldname=10-20 | addtotals 20-30* fieldname=20-30 | addtotals 30-40* fieldname=30-40 | addtotals 40-50* fieldname=40-50 |fields - *_s* | convert timeformat="%w-%a" ctime(_time) | eval DayOfWeek=_time | fields - _time | sort DayOfWeek | addtotals 10-20 20-30 30-40 40-50</query>
+          <earliest>$t.earliest$</earliest>
+          <latest>$t.latest$</latest>
+        </search>
+        <option name="charting.axisTitleX.visibility">collapsed</option>
+        <option name="charting.chart">area</option>
+        <option name="charting.chart.nullValueMode">zero</option>
+        <option name="charting.chart.showDataLabels">all</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">1</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+</form>

@@ -1,8 +1,10 @@
 # Car Speed Detection - speed-camera.py
 
-## Description
+![example-result](https://user-images.githubusercontent.com/622065/89743556-15265680-da59-11ea-83b0-77ba488b5be0.gif)
 
-![example-result](https://user-images.githubusercontent.com/622065/88995677-207ec280-d2a0-11ea-9cc0-4f8271f7de09.gif)
+_This is a 25mph zone!_
+
+## Description
 
 This program, designed for the Raspberry Pi, records the speed of cars driving perpendicular to a PiCamera.  For vehicles traveling faster than a specified speed, it will send the video feed via Telegram.  It determines speed based on the field-of-view of the camera and distance from the cars.
 
@@ -15,6 +17,18 @@ All of the data is output in a CSV format that works well in software like Splun
 * Opencv
 * Imagemagik
 * Python 3
+
+## Example
+
+### Installation
+
+![Custom Build](https://user-images.githubusercontent.com/622065/89743557-19527400-da59-11ea-8a00-38e56dee9b92.jpg)
+
+_Custom setup in my lawn._
+
+![Dashboard](https://user-images.githubusercontent.com/622065/89743733-d396ab00-da5a-11ea-9f4c-6da82dc543d7.png)
+
+_One week worth of data from my house. I live 100ft from an intersection, my road leads to a highway on-ramp (increase in RTL traffic), and its a 25mph zone._
 
 ## Configuration
 
