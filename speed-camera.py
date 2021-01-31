@@ -228,7 +228,7 @@ class Recorder:
 # calculate speed from pixels and time
 def get_speed(pixels, ftperpixel, secs):
     if secs > 0.0:
-        return ((pixels * ftperpixel)/ secs) * 0.681818
+        return ((pixels * ftperpixel)/ secs) * 3.6
     else:
         return 0.0
 
