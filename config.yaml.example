@@ -37,3 +37,7 @@ telegram_token: "ABC:DEF"
 telegram_chat_id: "123456789"
 # hours between updates
 telegram_frequency: 6
+
+# unit system
+units = "metric"    # <---- unit system: metric or us
+

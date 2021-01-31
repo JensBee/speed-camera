@@ -72,6 +72,8 @@ class Config:
     telegram_token = ""       # <---- bot token to authenticate with Telegram
     telegram_chat_id = ""     # <---- person/group `chat_id` to send the alert to
     telegram_frequency = 6    # <---- hours between periodic text updates
+    # unit system
+    units = "metric"          # <---- unit system: metric or us
 
     @staticmethod
     def load(config_file):
