@@ -235,9 +235,9 @@ def get_speed(pixels, ftperpixel, secs):
 # calculate pixel width
 def get_pixel_width(fov, distance, image_width):
     frame_width_distance = 2 * (math.tan(math.radians(fov * 0.5)) * distance)
-    ft_per_pixel = frame_width_distance / float(image_width)
+    distance_per_pixel = frame_width_distance / float(image_width)
 
-    return ft_per_pixel
+    return distance_per_pixel
 
 def str_direction(direction):
     if direction == LEFT_TO_RIGHT:
