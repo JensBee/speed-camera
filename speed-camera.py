@@ -234,8 +234,8 @@ def get_speed(pixels, ftperpixel, secs):
 
 # calculate pixel width
 def get_pixel_width(fov, distance, image_width):
-    frame_width_ft = 2 * (math.tan(math.radians(fov * 0.5)) * distance)
-    ft_per_pixel = frame_width_ft / float(image_width)
+    frame_width_distance = 2 * (math.tan(math.radians(fov * 0.5)) * distance)
+    ft_per_pixel = frame_width_distance / float(image_width)
 
     return ft_per_pixel
 
