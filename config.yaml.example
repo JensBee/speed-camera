@@ -5,13 +5,13 @@ lower_right_x: 1024
 lower_right_y: 576
 
 # distance-to-road in feet
-l2r_distance: 75
-r2l_distance: 85
+l2r_distance: 17
+r2l_distance: 15
 
 # minimum speed for saving records
-min_speed: 10
+min_speed: 15
 # minimum speed for saving images
-min_speed_alert : 30
+min_speed_alert : 40
 # what the smallest area to consider saving
 min_area: 2000
 # what the minimum percentage confidence to consider saving records
