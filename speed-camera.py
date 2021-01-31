@@ -51,8 +51,8 @@ class Config:
     lower_right_x = 1024
     lower_right_y = 576
     # range
-    l2r_distance = 65         # <---- distance-to-road in feet (left-to-right side)
-    r2l_distance = 80         # <---- distance-to-road in feet (right-to-left side)
+    l2r_distance = 16         # <---- distance-to-road (left-to-right side)
+    r2l_distance = 15         # <---- distance-to-road (right-to-left side)
     # camera settings
     fov = 62.2                # <---- field of view
     fps = 30                  # <---- frames per second
@@ -63,8 +63,8 @@ class Config:
     camera_hflip = False      # <---- flip camera horizontally
     # thresholds for recording
     min_distance = 0.4        # <---- minimum distance between cars
-    min_speed = 10            # <---- minimum speed for recording events
-    min_speed_alert = 30      # <---- minimum speed for sending an alert
+    min_speed = 15            # <---- minimum speed for recording events
+    min_speed_alert = 40      # <---- minimum speed for sending an alert
     min_area = 2000           # <---- minimum area for recording events
     min_confidence = 70       # <---- minimum percentage confidence for recording events
     min_confidence_alert = 90 # <---- minimum percentage confidence for saving images
