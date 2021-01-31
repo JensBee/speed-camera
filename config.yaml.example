@@ -39,5 +39,5 @@ telegram_chat_id: "123456789"
 telegram_frequency: 6
 
 # unit system
-units = "metric"    # <---- unit system: metric or us
+units: "metric"    # <---- unit system: metric or us
 
