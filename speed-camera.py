@@ -137,8 +137,8 @@ class Recorder:
         if not f.is_file():
             self.write_csv(self.RECORD_HEADERS)
 
-    def send_animation(self, timestamp, events, confidence, mph):
-        folder = "logs/{}-{:02.0f}mph-{:.0f}".format(timestamp.strftime('%Y-%m-%d_%H:%M:%S.%f'), mph, confidence)
+    def send_animation(self, timestamp, events, confidence, speed):
+        folder = "logs/{}-{:02.0f}speed-{:.0f}".format(timestamp.strftime('%Y-%m-%d_%H:%M:%S.%f'), speed, confidence)
         gif_file = "{}.gif".format(folder)
         json_file = "{}.json".format(folder)
 
@@ -148,7 +148,7 @@ class Recorder:
         data = []
         for e in events:
             # annotate it
-            image = annotate_image(e['image'], e['ts'], mph=e['mph'], confidence=confidence, x=e['x'], y=e['y'], w=e['w'], h=e['h'])
+            image = annotate_image(e['image'], e['ts'], speed=e['speed'], confidence=confidence, x=e['x'], y=e['y'], w=e['w'], h=e['h'])
 
             # and save the image to disk
             cv2.imwrite("{}/{}.jpg".format(folder, e['ts']), image)
@@ -170,7 +170,7 @@ class Recorder:
         # Send message
         self.send_gif(
             filename=gif_file,
-            text='{:.0f} mph @ {:.0f}%'.format(mph, confidence)
+            text='{:.0f} speed@ {:.0f}%'.format(speed, confidence)
         )
 
         return gif_file
@@ -300,7 +300,7 @@ def detect_motion(image, min_area):
 
     return (motion_found, x, y, w, h, biggest_area)
 
-def annotate_image(image, timestamp, mph=0, confidence=0, h=0, w=0, x=0, y=0):
+def annotate_image(image, timestamp, speed=0, confidence=0, h=0, w=0, x=0, y=0):
     global cfg
 
     # colors
@@ -316,8 +316,8 @@ def annotate_image(image, timestamp, mph=0, confidence=0, h=0, w=0, x=0, y=0):
                 (10, image.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color_red, 2)
 
     # write the speed
-    if mph > 0:
-        msg = "{:.0f} mph".format(mph)
+    if speed> 0:
+        msg = "{:.0f} speed".format(speed)
         (size, _) = cv2.getTextSize(msg, cv2.FONT_HERSHEY_SIMPLEX, 2, 3)
 
         # then center it horizontally on the image
@@ -522,7 +522,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
             last_w = w
             initial_time = timestamp
 
-            last_mph = 0
+            last_speed= 0
 
             # initialise array for storing speeds & standard deviation
             areas = np.array([])
@@ -536,7 +536,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
 
             logging.info('Tracking')
             logging.info("Initial Data: x={:.0f} w={:.0f} area={:.0f} gap={}".format(initial_x, initial_w, biggest_area, car_gap))
-            logging.info(" x-Δ     Secs      MPH  x-pos width area dir")
+            logging.info(" x-Δ     Secs      SPD  x-pos width area dir")
 
             # if gap between cars too low then probably seeing tail lights of current car
             # but I might need to tweek this if find I'm not catching fast cars
@@ -566,20 +566,20 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
 
             if state == TRACKING:
                 abs_chg = 0
-                mph = 0
+                speed = 0
                 distance = 0
                 if x >= last_x:
                     direction = LEFT_TO_RIGHT
                     distance = cfg.l2r_distance
                     abs_chg = (x + w) - (initial_x + initial_w)
-                    mph = get_speed(abs_chg, l2r_dist_per_pixel, secs)
+                    speed = get_speed(abs_chg, l2r_dist_per_pixel, secs)
                 else:
                     direction = RIGHT_TO_LEFT
                     distance = cfg.r2l_distance
                     abs_chg = initial_x - x
-                    mph = get_speed(abs_chg, r2l_dist_per_pixel, secs)
+                    speed = get_speed(abs_chg, r2l_dist_per_pixel, secs)
 
-                speeds = np.append(speeds, mph)
+                speeds = np.append(speeds, speed)
                 areas = np.append(areas, biggest_area)
 
                 # Store event data
@@ -592,8 +592,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     'w': w,
                     'h': h,
                     # Speed
-                    'mph': mph,
-                    # MPH is calculated from secs, delta, fov, distance, image_width
+                    'speed': speed,
+                    # SPD is calculated from secs, delta, fov, distance, image_width
                     'fov': cfg.fov,
                     'image_width': cfg.image_width,
                     'distance': distance,
@@ -605,7 +605,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 })
 
                 # If we've stopped or are going backward, reset.
-                if mph <= 0:
+                if speed <= 0:
                     logging.info("negative speed - stopping tracking")
                     if direction == LEFT_TO_RIGHT:
                         direction = RIGHT_TO_LEFT  # Reset correct direction
@@ -615,7 +615,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                         x = cfg.monitored_width + MIN_SAVE_BUFFER  # Force save
 
                 logging.info("{0:4d}  {1:7.2f}  {2:7.0f}   {3:4d}  {4:4d} {5:4d} {6:s}".format(
-                    abs_chg, secs, mph, x, w, biggest_area, str_direction(direction)))
+                    abs_chg, secs, speed, x, w, biggest_area, str_direction(direction)))
 
                 # is front of object outside the monitired boundary? Then write date, time and speed on image
                 # and save it
@@ -679,7 +679,7 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     cap_time = timestamp
                 # if the object hasn't reached the end of the monitored area, just remember the speed
                 # and its last position
-                last_mph = mph
+                last_speed = speed
                 last_x = x
     else:
         if state != WAITING:
