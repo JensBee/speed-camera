@@ -392,10 +392,10 @@ logging.info("Monitoring: ({},{}) to ({},{}) = {}x{} space".format(
 recorder = Recorder(cfg)
 
 # calculate the the width of the image at the distance specified
-l2r_ft_per_pixel = get_pixel_width(cfg.fov, cfg.l2r_distance, cfg.image_width)
-r2l_ft_per_pixel = get_pixel_width(cfg.fov, cfg.r2l_distance, cfg.image_width)
-logging.info("L2R: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_ft_per_pixel))
-logging.info("R2L: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_ft_per_pixel))
+l2r_dist_per_pixel = get_pixel_width(cfg.fov, cfg.l2r_distance, cfg.image_width)
+r2l_dist_per_pixel = get_pixel_width(cfg.fov, cfg.r2l_distance, cfg.image_width)
+logging.info("L2R: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_dist_per_pixel))
+logging.info("R2L: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_dist_per_pixel))
 
 state = WAITING
 direction = UNKNOWN
@@ -572,12 +572,12 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                     direction = LEFT_TO_RIGHT
                     distance = cfg.l2r_distance
                     abs_chg = (x + w) - (initial_x + initial_w)
-                    mph = get_speed(abs_chg, l2r_ft_per_pixel, secs)
+                    mph = get_speed(abs_chg, l2r_dist_per_pixel, secs)
                 else:
                     direction = RIGHT_TO_LEFT
                     distance = cfg.r2l_distance
                     abs_chg = initial_x - x
-                    mph = get_speed(abs_chg, r2l_ft_per_pixel, secs)
+                    mph = get_speed(abs_chg, r2l_dist_per_pixel, secs)
 
                 speeds = np.append(speeds, mph)
                 areas = np.append(areas, biggest_area)
