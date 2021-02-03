@@ -276,7 +276,7 @@ def detect_motion(image, min_area):
     # dilate the thresholded image to fill in any holes, then find contours
     # on thresholded image
     image = cv2.dilate(image, None, iterations=2)
-    (_, cnts, _) = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    (cnts, _) = cv2.findContours(image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # look for motion
     motion_found = False
