@@ -414,9 +414,9 @@ last_w = 0
 biggest_area = 0
 areas = np.array([])
 # timing
-initial_time = datetime.now(timezone.cet)
-cap_time = datetime.now(timezone.cet)
-timestamp = datetime.now(timezone.cet)
+initial_time = datetime.now(timezone.utc)
+cap_time = datetime.now(timezone.utc)
+timestamp = datetime.now(timezone.utc)
 # speeds
 sd = 0
 speeds = np.array([])
@@ -424,14 +424,14 @@ counter = 0
 # event captures
 events = []
 # fps
-fps_time = datetime.now(timezone.cet)
+fps_time = datetime.now(timezone.utc)
 fps_frames = 0
 # capture
 base_image = None
 # stats
 stats_l2r = np.array([])
 stats_r2l = np.array([])
-stats_time = datetime.now(timezone.cet)
+stats_time = datetime.now(timezone.utc)
 # startup
 has_started = False
 
@@ -441,7 +441,7 @@ has_started = False
 #
 for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
     # initialize the timestamp
-    timestamp = datetime.now(timezone.cet)
+    timestamp = datetime.now(timezone.utc)
 
     # Save a preview of the image
     if not has_started:
