@@ -78,6 +78,13 @@ For this section, speed is the mean MPH, area is pixels, and confidence is how c
 | `telegram_chat_id` | `None` | person/group `chat_id` to send the alert to |
 | `telegram_frequency` | `6` | hours between periodic text updates |
 
+### Unit system
+
+| *field* | *default* | *description* |
+| ------- | --------- | ------------- |
+| `units` | `metric` | unit system to use: `metric`or `us` |
+
+
 ## Installation
 
 1. Copy all files to the Pi under `/home/pi/speed-camera`
@@ -99,24 +106,24 @@ $ python3 speed-camera.py preview --config config.yaml
 2020-07-30 09:47:40,960 Initializing
 2020-07-30 09:47:40,990 Booting up camera
 2020-07-30 09:47:43,087 Monitoring: (90,292) to (1000,496) = 910x204 space
-2020-07-30 09:47:43,090 L2R: 45ft from camera == 0.05 per pixel
-2020-07-30 09:47:43,091 R2L: 45ft from camera == 0.05 per pixel
+2020-07-30 09:47:43,090 L2R: 15m from camera == 0.05 per pixel
+2020-07-30 09:47:43,091 R2L: 15m from camera == 0.05 per pixel
 ```
 
 ### Normal
 
-During normal operation, the service will write all logs to `logs/service.log`, metrics to `logs/recorded_speed.csv`, and any "alerts" to `logs/YYYY-MM-DD_HH:MM:SS.SSSSSS-SPEEDmph-CONFIDENCE.json` and `logs/YYYY-MM-DD_HH:MM:SS.SSSSSS-SPEEDmph-CONFIDENCE.gif`.
+During normal operation, the service will write all logs to `logs/service.log`, metrics to `logs/recorded_speed.csv`, and any "alerts" to `logs/YYYY-MM-DD_HH:MM:SS.SSSSSS-SPEEDkph-CONFIDENCE.json` and `logs/YYYY-MM-DD_HH:MM:SS.SSSSSS-SPEEDkph-CONFIDENCE.gif`.
 
 ```
 $ python3 speed-camera.py --config config.yaml
 2020-07-30 09:47:40,960 Initializing
 2020-07-30 09:47:40,990 Booting up camera
 2020-07-30 09:47:43,087 Monitoring: (90,292) to (1000,496) = 910x204 space
-2020-07-30 09:47:43,090 L2R: 45ft from camera == 0.05 per pixel
-2020-07-30 09:47:43,091 R2L: 45ft from camera == 0.05 per pixel
+2020-07-30 09:47:43,090 L2R: 15m from camera == 0.05 per pixel
+2020-07-30 09:47:43,091 R2L: 15m from camera == 0.05 per pixel
 2020-07-30 09:49:34,731 Tracking
 2020-07-30 09:49:34,732 Initial Data: x=871 w=39 area=2730 gap=111.603324
-2020-07-30 09:49:34,732  x-Δ     Secs      MPH  x-pos width area dir
+2020-07-30 09:49:34,732  x-Δ     Secs      SPD  x-pos width area dir
 2020-07-30 09:49:34,834   55     0.10       20    816    94 9306 RTL
 2020-07-30 09:49:34,968  128     0.23       20    743   167 19706 RTL
 2020-07-30 09:49:35,146  203     0.38       20    668   242 30492 RTL
@@ -158,7 +165,7 @@ $ python3 calibrate.py logs/2020-07-30_16:52:13.285767-21mph-99.json --mph=36
 2020-07-30 19:07:33,141 Updated distance for RTL: 76.09
 ```
 
-In this example, the car was recorded at 21 MPH but it actually was going 36 MPH.  The output says to adjust the RTL distance to 76ft.
+In this example, the car was recorded at 21 kph but it actually was going 36 MPH.  The output says to adjust the RTL distance to 76ft.
 
 ## References
 
