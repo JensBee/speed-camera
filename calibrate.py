@@ -22,7 +22,7 @@ logging.basicConfig(
 args = docopt.docopt(__doc__)
 
 # Get the actual speed
-speed = int(args['--speed'])
+speed = int(args['--kph'])
 
 # Load the event data
 event_data = None
