@@ -396,8 +396,13 @@ recorder = Recorder(cfg)
 # calculate the the width of the image at the distance specified
 l2r_dist_per_pixel = get_pixel_width(cfg.fov, cfg.l2r_distance, cfg.image_width)
 r2l_dist_per_pixel = get_pixel_width(cfg.fov, cfg.r2l_distance, cfg.image_width)
-logging.info("L2R: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_dist_per_pixel))
-logging.info("R2L: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_dist_per_pixel))
+
+if cfg.units == "metric":
+    logging.info("L2R: {:.0f}m from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_dist_per_pixel))
+    logging.info("R2L: {:.0f}m from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_dist_per_pixel))
+else:
+    logging.info("L2R: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.l2r_distance, l2r_dist_per_pixel))
+    logging.info("R2L: {:.0f}ft from camera == {:.2f} per pixel".format(cfg.r2l_distance, r2l_dist_per_pixel))
 
 state = WAITING
 direction = UNKNOWN
