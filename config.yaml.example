@@ -4,7 +4,7 @@ upper_left_y: 0
 lower_right_x: 1024
 lower_right_y: 576
 
-# distance-to-road in feet
+# distance-to-road in meter
 l2r_distance: 17
 r2l_distance: 15
 
