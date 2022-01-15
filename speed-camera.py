@@ -23,7 +23,6 @@ import math
 import json
 import yaml
 import shutil
-import telegram
 import subprocess
 from multiprocessing import Process
 
@@ -132,7 +131,10 @@ class Recorder:
         # Initialize Bot
         self.bot = None
         if self.telegram_token and self.telegram_chat_id:
+            import telegram
             self.bot = telegram.Bot(self.telegram_token)
+        else:
+            logging.info("Telegram support disabled: token and chat_id not defined.")
 
         # Write headers to the output csv
         f = Path(self.RECORD_FILENAME)
