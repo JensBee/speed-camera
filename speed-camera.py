@@ -11,8 +11,6 @@ Options:
 
 # import the necessary packages
 from docopt import docopt
-from picamera import PiCamera
-from picamera.array import PiRGBArray
 from pathlib import Path
 from datetime import datetime, timezone
 import cv2
@@ -44,6 +42,9 @@ LEFT_TO_RIGHT = 1
 RIGHT_TO_LEFT = 2
 
 class Config:
+    # camera
+    camera_type = "picam"
+    camera_webcam_device = "/dev/video0"
     # monitoring area
     upper_left_x = 0
     upper_left_y = 0
@@ -355,13 +356,26 @@ def annotate_image(image, timestamp, speed=0, confidence=0, h=0, w=0, x=0, y=0):
 def setup_camera(cfg):
     logging.info("Booting up camera")
 
-    # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
-    camera = PiCamera(resolution=cfg.resolution, framerate=cfg.fps, sensor_mode=5)
-    camera.vflip = cfg.camera_vflip
-    camera.hflip = cfg.camera_hflip
+    if cfg.camera_type == "picam":
+        from picamera import PiCamera
+        from picamera.array import PiRGBArray
+        # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
+        camera = PiCamera(resolution=cfg.resolution, framerate=cfg.fps, sensor_mode=5)
+        camera.vflip = cfg.camera_vflip
+        camera.hflip = cfg.camera_hflip
 
-    # start capturing
-    capture = PiRGBArray(camera, size=camera.resolution)
+        # start capturing
+        capture = PiRGBArray(camera, size=camera.resolution)
+    elif cfg.camera_type == "webcam":
+        camera = cv2.VideoCapture(cfg.camera_webcam_device)
+        if not camera.isOpened():
+            raise Exception("Could not open webcam video device")
+        camera.set(cv2.CAP_PROP_FRAME_WIDTH, cfg.image_width)
+        camera.set(cv2.CAP_PROP_FRAME_HEIGHT, cfg.image_height)
+
+        ret, capture = camera.read()
+    else:
+        raise Exception("Unknown video device")
 
     # allow the camera to warm up
     time.sleep(2)
@@ -441,13 +455,28 @@ has_started = False
 #   This keeps the picamera in capture mode - it doesn't need
 #   to prep for each frame's capture.
 #
-for frame in camera.capture_continuous(capture, format="bgr", use_video_port=True):
+if cfg.camera_type == "picam":
+    frame_stream = camera.capture_continuous(capture, format="bgr", use_video_port=True)
+
+while True:
+    if cfg.camera_type == "picam":
+        frame = frame_stream.next()
+    elif cfg.camera_type == "webcam":
+        ret, frame = camera.read()
+        if ret == False:
+            logging.warn("Failed to read frame from webcam device")
+            continue
+
     # initialize the timestamp
     timestamp = datetime.now(timezone.utc)
 
     # Save a preview of the image
     if not has_started:
-        image = annotate_image(frame.array, timestamp)
+        if cfg.camera_type == "picam":
+            image = annotate_image(frame.array, timestamp)
+        elif cfg.camera_type == "webcam":
+            image = annotate_image(frame, timestamp)
+
         cv2.imwrite("preview.jpg", image)
         recorder.send_image(
             filename='preview.jpg',
@@ -492,8 +521,11 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
         stats_r2l = np.array([])
         stats_time = timestamp
 
-    # grab the raw NumPy array representing the image
-    image = frame.array
+    if cfg.camera_type == "picam":
+        # grab the raw NumPy array representing the image
+        image = frame.array
+    elif cfg.camera_type == "webcam":
+        image = frame
 
     # crop area defined by [y1:y2,x1:x2]
     gray = image[
@@ -509,7 +541,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
     if base_image is None:
         base_image = gray.copy().astype("float")
         lastTime = timestamp
-        capture.truncate(0)
+        if cfg.camera_type == "picam":
+            capture.truncate(0)
         continue
 
     #  compute the absolute difference between the current image and
@@ -554,7 +587,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 direction = UNKNOWN
                 motion_found = False
                 biggest_area = 0
-                capture.truncate(0)
+                if cfg.camera_type == "picam":
+                    capture.truncate(0)
                 base_image = None
                 logging.info("Car too close, skipping")
                 continue
@@ -568,7 +602,8 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
                 direction = UNKNOWN
                 motion_found = False
                 biggest_area = 0
-                capture.truncate(0)
+                if cfg.camera_type == "picam":
+                    capture.truncate(0)
                 base_image = None
                 logging.info('Resetting')
                 continue
@@ -701,8 +736,11 @@ for frame in camera.capture_continuous(capture, format="bgr", use_video_port=Tru
         last_x = 0
         cv2.accumulateWeighted(gray, base_image, 0.25)
 
-    # clear the stream in preparation for the next frame
-    capture.truncate(0)
+    if cfg.camera_type == "picam":
+        # clear the stream in preparation for the next frame
+        capture.truncate(0)
 
 # cleanup the camera and close any open windows
+if cfg.camera_type == "webcam":
+    camera.release()
 cv2.destroyAllWindows()

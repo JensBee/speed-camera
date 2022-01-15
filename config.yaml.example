@@ -1,3 +1,9 @@
+# camera type, defaults to picam
+camera_type: "picam"
+# if camera_type is webcam, which device should we use
+# defaults to dev/video0
+camera_webcam_device: "/dev/video0"
+
 # location to monitor
 upper_left_x: 0
 upper_left_y: 0
