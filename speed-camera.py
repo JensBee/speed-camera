@@ -55,7 +55,7 @@ class Config:
     r2l_distance = 15         # <---- distance-to-road (right-to-left side)
     # camera settings
     fov = 62.2                # <---- field of view
-    fps = 30                  # <---- frames per second
+    camera_picam_fps = 30     # <---- frames per second
     image_width = 1024        # <---- resolution width
     image_height = 576        # <---- resolution height
     image_min_area = 500      # <---- minimum area for detecting motion
@@ -360,7 +360,7 @@ def setup_camera(cfg):
         from picamera import PiCamera
         from picamera.array import PiRGBArray
         # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
-        camera = PiCamera(resolution=cfg.resolution, framerate=cfg.fps, sensor_mode=5)
+        camera = PiCamera(resolution=cfg.resolution, framerate=cfg.camera_picam_fps, sensor_mode=5)
         camera.vflip = cfg.camera_vflip
         camera.hflip = cfg.camera_hflip
 

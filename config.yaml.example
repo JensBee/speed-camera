@@ -1,8 +1,13 @@
 # camera type, defaults to picam
-camera_type: "picam"
-# if camera_type is webcam, which device should we use
-# defaults to dev/video0
-camera_webcam_device: "/dev/video0"
+#camera_type: "picam"
+
+## webcam specific configuration
+# device to use (defaults to dev/video0)
+#camera_webcam_device: "/dev/video0"
+
+## picam specific configuration
+# frames per second (defaults to 30)
+#camera_picam_fps: 30
 
 # location to monitor
 upper_left_x: 0
@@ -29,8 +34,6 @@ min_distance: 0.4
 
 # field of view
 fov: 62.2
-# frames per second
-fps: 30
 # resolution
 image_width: 1024
 image_height: 576
