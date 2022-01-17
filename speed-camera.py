@@ -105,8 +105,6 @@ class Config:
         cfg.monitored_width = cfg.lower_right_x - cfg.upper_left_x
         cfg.monitored_height = cfg.lower_right_y - cfg.upper_left_y
 
-        cfg.resolution = [cfg.image_width, cfg.image_height]
-
         return cfg
 
 class Recorder:
@@ -360,7 +358,7 @@ def setup_camera(cfg):
         from picamera import PiCamera
         from picamera.array import PiRGBArray
         # initialize the camera. Adjust vflip and hflip to reflect your camera's orientation
-        camera = PiCamera(resolution=cfg.resolution, framerate=cfg.camera_picam_fps, sensor_mode=5)
+        camera = PiCamera(resolution=[cfg.image_width, cfg.image_height], framerate=cfg.camera_picam_fps, sensor_mode=5)
         camera.vflip = cfg.camera_vflip
         camera.hflip = cfg.camera_hflip
 
